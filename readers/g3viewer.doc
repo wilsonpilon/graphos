@@ -1,0 +1,132 @@
+    Documentation of the "Graphos III File Viewers"
+
+
+    0 - Introduction
+
+
+    All files contained in this pack are freeware, which includes:
+
+    - G3Viewer.Doc: this file!
+    - G3AlfVwr.Pas: source of MSX Graphos III "Alfabeto" file viewer.
+    - G3LayVwr.Pas: source of MSX Graphos III Layout file viewer.
+    - G3ScrVwr.Pas: source of MSX Graphos III Display file viewer.
+    - G3ShpVwr.Pas: source of MSX Graphos III Shape file viewer.
+    - Alf.Exe     : G3AlfVwr.Pas compiled using Turbo Pascal 7.0.
+    - Lay.Exe     : G3LayVwr.Pas compiled using Turbo Pascal 7.0.
+    - Scr.Exe     : G3ScrVwr.Pas compiled using Turbo Pascal 7.0.
+    - Shp.Exe     : G3ShpVwr.Pas compiled using Turbo Pascal 7.0.
+    - Cyberknt.Alf: sample alphabet file, created by me to an old demo.
+    - Zillion1.Lay: sample layout file. Picture copied by me from the  TV
+                    series "Akai Koodan  Zillion" ("Red  Light-Projectile
+                    Zillion"), showing  Apple  (left), J.J. (center)  and
+                    Champ (right) with their Zillions.
+    - MSXMetal.Scr: sample display file, created  by me to a Science Fair
+                    project, many years ago.
+    - Movies.Shp  : sample shapes file, created by me with old video demo
+                    screens.
+
+    These programs were written in Turbo Pascal due to the graphic nature
+of the  output. They  can read  and  display  Graphos III ".Alf", ".Lay",
+".Scr" and ".Shp" files. To covert such  files to  other graphic formats,
+use a screen capture utility, like Deluxe Paint Camera (Electronic Arts),
+or press <PrtScr> key in a Windows DOS Prompt.
+
+    Note: the "CGA.BGI" and "EGAVGA.BGI" files must be  available  to the
+programs to work. The executable  files were compiled using  Turbo Pascal
+7.0, so to use  them it's  necessary  to use the ".BGI" files of the same
+version.
+
+
+    2 - Programs Descriptions
+
+    All four programs  have two parts. The first one is the parser, which
+reads in  the  source file, decodes its contents and store the data in  a
+virtual MSX VRAM, and the second  one is the  displayer, which reads  the
+virtual VRAM  and converts  its data to bit mapped  video. Note  that the
+pixels' proportions of an MSX and a PC CGA/VGA card are different, making
+the  images look  distorted (generally vertically  stretched). You should
+correct that using a graphic utility/editor.
+
+    To exit the programs, a  simple key  press is enough, except with the
+shapes viewer, which will only  accept <Esc> key press to finish. This is
+because a ".Shp" file may contain many shapes and a key press (not <Esc>)
+will make it show the next stored shape.
+
+
+    3 - Brief description of the files' formats:
+
+    Note: some versions of  Graphos III save files with the  base address
+&H9000  instead of  &H9200, used  in all  the following descriptions  and
+examples.
+
+
+Alf: these files  are raw  copies of the MSX  Character Generator area in
+     the VRAM, stored using  the MSX binary file  format, as if the  data
+     were  at &H9200 to &H99FF (or &H9000-&H97FF depending on the program
+     version), giving the files a header like this:
+
+     FE 00 92 FF 99 00 92 (8x8 characters' bit maps)
+
+
+Lay: these files are RLE compressed  images. They don't store color data,
+     only pattern data. They are stored using the MSX binary file format,
+     as if it began at &H9200, what gives the files a header like this:
+
+     FE 00 92 EL EH 00 92 (RLE image data)
+
+     where EH*256+EL makes the final position occupied by the image data.
+
+     All data in the layout file are encrypted using the  off-set method:
+     to each byte  is added the off-set &H99. I really couldn't find  out
+     why the programmer did so.
+
+     Layout files use "restrict special byte RLE", i.e., only  some types
+     of byte sequences are encoded, while the rest is simply stored. Only
+     bytes  0 and  255 are encoded. To  decode  the image  data, use this
+     algorithm:
+
+     0) read data length: C = Length = EH*256+EL-&H9200+1.
+     1) if C > 0, read byte B and make C = C-1, else end.
+     2) decrypt byte B subtracting &H99: B = B-&H99.
+     3) if byte is not 0 or 255 then store it in VRAM and goto (1).
+     4) read repetition byte R.
+     5) store R times the byte B in VRAM and goto (1).
+
+
+Scr: these files  are self-displaying  pictures, stored  as standard  MSX
+     binary executable files. There are a display  program in the head of
+     each ".Scr" file. There are  about 4 different display  programs and
+     they all are allocated at the same space in the file, from byte 7 to
+     byte 127 (a total of 121 bytes). The file header looks like this:
+
+     FE 00 92 80 C2 00 92 (display program) (pattern data) (color data)
+
+     The pattern and color data are raw copies of the MSX VRAM.
+
+
+Shp: these  files don't have a standard MSX binary file format. They have
+     the generic structure:
+
+       01 (first block) 02 (second block) ... xx (last block) FF
+
+     With this structure, there may be up to 254 shapes in a file.
+
+     Each block is composed of:
+
+       first byte : shape type
+       second byte: shape width in pixels
+       third byte : shape height in 8x8 characters
+       remaining  : shape image data
+
+     The pattern, color and mask data of a shape are stored as raw copies
+     of a block of VRAM.
+
+     The shapes may be of four types:
+
+       1: single B&W image (only the shape pattern is stored)
+       2: color image (pattern data followed by color data)
+       3: B&W image with a mask (mask  pattern followed by image pattern)
+       4: color  image with a mask (mask pattern, shape pattern and color
+          data)
+
+     The width of a shape is ever a multiple of 8.
